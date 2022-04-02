@@ -26,7 +26,7 @@ app = Flask(__name__)
 # A route to respond to SMS messages
 @app.route('/sms', methods=['POST'])
 def test():
-    name = urllib.parse.quote(request.form['Body'])
+    name = request.form['Body']
 
     # Get the sender's number
     sender_number = request.form['From']
