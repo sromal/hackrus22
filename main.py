@@ -44,9 +44,7 @@ def incoming():
     data = request.form['Body']
     sender_number = request.form['From']
 
-    if data == "!start":
-        match(sender_number)
-    elif isActive(sender_number):
+    if isActive(sender_number):
         if data == "!quit":
             partner = pairings.pop(sender_number)
             pairings.pop(partner)
@@ -61,7 +59,10 @@ def incoming():
             partner = pairings[sender_number]
             sendMessage(f'{data}', partner)
     else:
-        sendMessage(f'Not connected! Please enter !start to get matched...', sender_number)
+        if data == "!start":
+            match(sender_number)
+        else:
+            sendMessage(f'Not connected! Please enter !start to get matched...', sender_number)
 
 
 def match(sender_number):
