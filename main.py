@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 pairings = {}
 queue = []
 
+
 def load_twilio_config():
     load_dotenv()
     account_sid = os.environ['TWILIO_ACCOUNT_SID']
@@ -24,10 +25,15 @@ account_sid, auth_token, number = load_twilio_config()
 client = Client(account_sid, auth_token)
 app = Flask(__name__)
 
+
 def isQueued(sender_number):
     return sender_number in queue
+
+
 def isActive(sender_number):
     return sender_number in pairings
+
+
 def sendMessage(message, recipient):
     client.messages.create(
         body=message,
@@ -45,7 +51,7 @@ def incoming():
     sender_number = request.form['From']
 
     if data == "!start":
-        match(sender_number)
+        return match(sender_number)
     elif isActive(sender_number):
         if data == "!quit":
             partner = pairings.pop(sender_number)
@@ -56,18 +62,20 @@ def incoming():
                 partner
             )
 
-            match(partner)
+            return match(partner)
         else:
             partner = pairings[sender_number]
-            sendMessage(f'{data}', partner)
+            sendMessage(data, partner)
+            return data
     else:
-        sendMessage(f'Not connected! Please enter !start to get matched...', sender_number)
+        sendMessage('Not connected! Please enter !start to get matched...', sender_number)
+        return 'Not connected'
 
 
 def match(sender_number):
     global pairings, queue
     if isQueued(sender_number) or isActive(sender_number):
-        pass
+        return 'Already queued/active'
     elif queue:
         partner = queue.pop(0)
         pairings[sender_number] = partner
@@ -81,9 +89,11 @@ def match(sender_number):
             f"You've been matched with {sender_number}!",
             partner
         )
+        return partner
     else:
         queue.append(sender_number)
-        sendMessage(f"Queued!", sender_number)
+        sendMessage("Queued!", sender_number)
+        return 'Queued'
 
 
 if __name__ == '__main__':
