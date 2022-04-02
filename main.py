@@ -24,6 +24,17 @@ account_sid, auth_token, number = load_twilio_config()
 client = Client(account_sid, auth_token)
 app = Flask(__name__)
 
+def isQueued(sender_number):
+    return sender_number in queue
+def isActive(sender_number):
+    return sender_number in pairings
+def sendMessage(message, recipient):
+    client.messages.create(
+        body=message,
+        from_=number,
+        to=recipient
+    )
+
 
 # A route to respond to SMS messages
 @app.route('/sms', methods=['POST'])
@@ -33,52 +44,46 @@ def incoming():
     data = request.form['Body']
     sender_number = request.form['From']
 
-    if (data == "!start"):
+    if data == "!start":
         match(sender_number)
-    elif (data == "!quit"):
-        partner = pairings.pop(sender_number)
-        pairings.pop(partner)
+    elif isActive(sender_number):
+        if data == "!quit":
+            partner = pairings.pop(sender_number)
+            pairings.pop(partner)
 
-        client.messages.create(
-            body=f'{sender_number} disconnected! Reconnecting you to another match...',
-            from_=number,
-            to=partner
-        )
+            sendMessage(
+                f'{sender_number} disconnected! Reconnecting you to another match...',
+                partner
+            )
 
-        match(partner)
+            match(partner)
+        else:
+            partner = pairings[sender_number]
+            sendMessage(f'{data}', partner)
     else:
-        partner = pairings[sender_number]
-        client.messages.create(
-            body=f'{data}',
-            from_=number,
-            to=partner
-        )
+        sendMessage(f'Not connected! Please enter !start to get matched...', sender_number)
+
 
 def match(sender_number):
     global pairings, queue
-    if (queue):
+    if isQueued(sender_number) or isActive(sender_number):
+        pass
+    elif queue:
         partner = queue.pop(0)
         pairings[sender_number] = partner
         pairings[partner] = sender_number
 
-        client.messages.create(
-            body=f"You've been matched with {partner}!",
-            from_=number,
-            to=sender_number
+        sendMessage(
+            f"You've been matched with {partner}!",
+            sender_number
         )
-
-        client.messages.create(
-            body=f"You've been matched with {sender_number}!",
-            from_=number,
-            to=partner
+        sendMessage(
+            f"You've been matched with {sender_number}!",
+            partner
         )
     else:
         queue.append(sender_number)
-        client.messages.create(
-            body=f"Queued!",
-            from_=number,
-            to=sender_number
-        )
+        sendMessage(f"Queued!", sender_number)
 
 
 if __name__ == '__main__':
