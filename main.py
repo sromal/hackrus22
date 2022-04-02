@@ -50,9 +50,7 @@ def incoming():
     data = request.form['Body']
     sender_number = request.form['From']
 
-    if data == "!start":
-        return match(sender_number)
-    elif isActive(sender_number):
+    if isActive(sender_number):
         if data == "!quit":
             partner = pairings.pop(sender_number)
             pairings.pop(partner)
@@ -68,9 +66,11 @@ def incoming():
             sendMessage(data, partner)
             return data
     else:
-        sendMessage('Not connected! Please enter !start to get matched...', sender_number)
-        return 'Not connected'
-
+        if data == "!start":
+            return match(sender_number)
+        else:
+            sendMessage(f'Not connected! Please enter !start to get matched...', sender_number)
+            return 'Not connected'
 
 def match(sender_number):
     global pairings, queue
