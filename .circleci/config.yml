@@ -18,6 +18,6 @@ jobs:
           command: python3 test.py
 
 workflows:
-  sample: 
+  sample:
     jobs:
       - build-and-test
