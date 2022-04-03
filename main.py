@@ -3,6 +3,7 @@ from twilio_utils import *
 from flask import Flask, request
 from twilio.rest import Client
 from itertools import product
+import mysql.connector
 
 pairings = {}
 interests = {}
@@ -13,6 +14,7 @@ client = Client(account_sid, auth_token)
 model = load_model()
 app = Flask(__name__)
 
+db = mysql.connector.connect(host="34.66.242.148",user="root",password="7eb0da08824f113fbb15d644c855d47d",database="uKnightData")
 
 def send_message(message, recipient):
     client.messages.create(
@@ -48,6 +50,12 @@ def incoming():
             pairings.pop(partner)
             interests.pop(sender_number)
 
+            cursor = db.cursor()
+            cursor.execute("DELETE FROM uKnighted WHERE phone1=%s OR phone2=%s", (sender_number,sender_number))
+            db.commit()
+            cursor.close()
+
+
             send_message(
                 f'You finished your conversation!',
                 sender_number
@@ -60,6 +68,12 @@ def incoming():
 
             return match(partner)
         else:
+#            cursor = db.cursor()
+#            cursor.execute("SELECT phone1,phone2 FROM uKnighted WHERE phone1=%s OR phone2=%s", (sender_number,sender_number))
+#            out = cursor.fetchone()
+#            cursor.close
+#            partner = out[1] if out[0] == sender_number else out[0]
+
             partner = pairings[sender_number]
             send_message(f'{data}', partner)
     elif is_queued(sender_number):
@@ -73,6 +87,11 @@ def incoming():
             )
     else:
         if action.lower() == "!start":
+            cursor = db.cursor()
+            cursor.execute("INSERT IGNORE INTO uKnight (phone) VALUES (%s)", [sender_number])
+            db.commit()
+            cursor.close()
+
             valid_terms = [term for term in split[1:] if term.lower() in model] if len(split) >= 2 else []
             keywords = valid_terms[:min(n_keywords, len(valid_terms))]
 
@@ -109,6 +128,13 @@ def match(sender_number):
             partner = queue.pop(chosenIndex)
             pairings[sender_number] = partner
             pairings[partner] = sender_number
+
+            cursor = db.cursor()
+            cursor.execute("INSERT IGNORE INTO uKnighted (phone1,phone2) VALUES (%s,%s)", (sender_number,partner
+))
+            db.commit()
+            cursor.close()
+
 
             topics = "anything"
             if keywords:
