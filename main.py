@@ -62,7 +62,7 @@ def incoming():
             )
 
             send_message(
-                f'{sender_number} disconnected! Reconnecting you to another match...',
+                f'{sender_number} disconnected! Finding you another match...',
                 partner
             )
 
@@ -81,10 +81,11 @@ def incoming():
             queue.remove(sender_number)
             interests.pop(sender_number)
 
-            send_message(
-                f'You were dequeued!',
-                sender_number
-            )
+            send_message("You've been removed from the queue!", sender_number)
+            # send_message(
+            #     f'You were dequeued!',
+            #     sender_number
+            # )
     else:
         if action.lower() == "!start":
             cursor = db.cursor()
@@ -144,16 +145,16 @@ def match(sender_number):
                     topics = most_compatible[2].lower() + " and " + most_compatible[3].lower()
 
             send_message(
-                f"You've been matched with {partner} to talk about {topics}!",
+                f"You've been matched to talk about {topics}!", #f"You've been matched with {partner} to talk about {topics}!",
                 sender_number
             )
             send_message(
-                f"You've been matched with {sender_number} to talk about {topics}!",
+                f"You've been matched to talk about {topics}!", #f"You've been matched with {sender_number} to talk about {topics}!",
                 partner
             )
         else:
             queue.append(sender_number)
-            send_message(f"Queued!", sender_number)
+            send_message(f"You've entered the queue!", sender_number)
 
     return ""
 
