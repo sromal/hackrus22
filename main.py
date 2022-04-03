@@ -1,56 +1,17 @@
-import os
+from ml import *
+from twilio_utils import *
 from flask import Flask, request
-from twilio.twiml.messaging_response import MessagingResponse, Message
 from twilio.rest import Client
-from dotenv import load_dotenv
 from itertools import product
-import numpy as np
 
 pairings = {}
 interests = {}
 queue = []
 
-
-def load_twilio_config():
-    load_dotenv()
-    account_sid = os.environ['TWILIO_ACCOUNT_SID']
-    auth_token = os.environ['TWILIO_AUTH_TOKEN']
-    number = os.environ['TWILIO_NUMBER']
-
-    if not all([account_sid, auth_token, number]):
-        raise Exception
-
-    return account_sid, auth_token, number
-
-
-def load_model():
-    model = {}
-    with open("glove.6B.50d.txt", "r", encoding="utf-8") as file:
-        for line in file.readlines():
-            parts = line.split(' ')
-            model[parts[0]] = np.array([float(x) for x in parts[1:]])
-
-    return model
-
-
-def cosine_similarity(word1, word2):
-    vec1 = model[word1]
-    vec2 = model[word2]
-    return vec1.dot(vec2) / (np.linalg.norm(vec1, 2) * np.linalg.norm(vec2, 2))
-
-
 account_sid, auth_token, number = load_twilio_config()
 client = Client(account_sid, auth_token)
 model = load_model()
 app = Flask(__name__)
-
-
-def is_queued(sender_number):
-    return sender_number in queue
-
-
-def is_active(sender_number):
-    return sender_number in pairings
 
 
 def send_message(message, recipient):
@@ -60,6 +21,14 @@ def send_message(message, recipient):
         to=recipient
     )
     return message
+
+
+def is_queued(sender_number):
+    return sender_number in queue
+
+
+def is_active(sender_number):
+    return sender_number in pairings
 
 
 # A route to respond to SMS messages
@@ -126,7 +95,7 @@ def match(sender_number):
         for i, possibleMatch in enumerate(queue):
             targetInterests = interests[possibleMatch]
             for interest1, interest2 in product(keywords, targetInterests):
-                score = cosine_similarity(interest1, interest2)
+                score = cosine_similarity(model, interest1, interest2)
                 if score > most_compatible[1]:
                     most_compatible = (possibleMatch, score, interest1, interest2)
                     chosenIndex = i
@@ -141,7 +110,13 @@ def match(sender_number):
             pairings[sender_number] = partner
             pairings[partner] = sender_number
 
-            topics = "anything" if not keywords else most_compatible[2] + " and " + most_compatible[3]
+            topics = "anything"
+            if keywords:
+                if most_compatible[2] == most_compatible[3]:
+                    topics = most_compatible[2]
+                else:
+                    topics = most_compatible[2] + " and " + most_compatible[3]
+
             send_message(
                 f"You've been matched with {partner} to talk about {topics}!",
                 sender_number
