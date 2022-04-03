@@ -43,7 +43,7 @@ def incoming():
     action = "" if len(split) == 0 else split[0]
     
     if is_active(sender_number):
-        if action == "!quit":
+        if action.lower() == "!quit":
             partner = pairings.pop(sender_number)
             pairings.pop(partner)
             interests.pop(sender_number)
@@ -63,7 +63,7 @@ def incoming():
             partner = pairings[sender_number]
             send_message(f'{data}', partner)
     elif is_queued(sender_number):
-        if (action == "!quit"):
+        if action.lower() == "!quit":
             queue.remove(sender_number)
             interests.pop(sender_number)
 
@@ -72,14 +72,14 @@ def incoming():
                 sender_number
             )
     else:
-        if action == "!start":
-            valid_terms = [term for term in split[1:] if term in model] if len(split) >= 2 else []
+        if action.lower() == "!start":
+            valid_terms = [term for term in split[1:] if term.lower() in model] if len(split) >= 2 else []
             keywords = valid_terms[:min(n_keywords, len(valid_terms))]
 
             interests[sender_number] = keywords
             match(sender_number)
         else:
-            send_message(f'Not connected! Please enter !start to get matched...', sender_number)
+            send_message(f'Please enter !start to get matched...', sender_number)
 
     return ""
 
@@ -112,10 +112,10 @@ def match(sender_number):
 
             topics = "anything"
             if keywords:
-                if most_compatible[2] == most_compatible[3]:
-                    topics = most_compatible[2]
+                if most_compatible[2].lower() == most_compatible[3].lower():
+                    topics = most_compatible[2].lower()
                 else:
-                    topics = most_compatible[2] + " and " + most_compatible[3]
+                    topics = most_compatible[2].lower() + " and " + most_compatible[3].lower()
 
             send_message(
                 f"You've been matched with {partner} to talk about {topics}!",

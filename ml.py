@@ -11,7 +11,7 @@ def load_model():
 
 
 def cosine_similarity(model, word1, word2):
-    vec1 = model[word1]
-    vec2 = model[word2]
+    vec1 = model[word1.lower()]
+    vec2 = model[word2.lower()]
     return vec1.dot(vec2) / (np.linalg.norm(vec1, 2) * np.linalg.norm(vec2, 2))
 
