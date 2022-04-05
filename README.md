@@ -1,4 +1,4 @@
-# uKnight
+# Unite
 
 A Twilio-backed SMS service that creates anonymous conversations based on shared interests
 
